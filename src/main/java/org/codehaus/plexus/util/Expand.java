@@ -116,9 +116,23 @@ public class Expand
     {
         File f = FileUtils.resolveFile( dir, entryName );
 
-        if ( !f.getAbsolutePath().startsWith( dir.getAbsolutePath() ) )
+        try
         {
-            throw new IOException( "Entry '" + entryName + "' outside the target directory." );
+            String canonicalDirPath = dir.getCanonicalPath();
+            String canonicalFilePath = f.getCanonicalPath();
+
+            // Ensure the file is within the target directory
+            // We need to check that the canonical file path starts with the canonical directory path
+            // followed by a file separator to prevent path traversal attacks
+            if ( !canonicalFilePath.startsWith( canonicalDirPath + File.separator )
+                    && !canonicalFilePath.equals( canonicalDirPath ) )
+            {
+                throw new IOException( "Entry '" + entryName + "' outside the target directory." );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new IOException( "Failed to verify entry path for '" + entryName + "'", e );
         }
 
         try
